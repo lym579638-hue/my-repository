@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POS Food & Drink</title>
+<style>
+*{box-sizing:border-box;font-family:Arial;-webkit-user-select:none;user-select:none;}
+body{margin:0;background:#f3f3f3}
+.container{display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;background:#111;color:#fff;padding:20px}
+.sidebar h2{margin-bottom:30px}
+.sidebar a{display:block;color:#aaa;margin:12px 0;text-decoration:none}
+.sidebar a.active{color:#fff}
+
+/* Main */
+.main{flex:1;padding:20px;overflow:auto}
+.header{display:flex;justify-content:space-between;align-items:center}
+.search{padding:8px 15px;border-radius:20px;border:1px solid #ccc}
+.categories button{margin:5px;padding:8px 16px;border:none;border-radius:20px;cursor:pointer}
+.categories .active{background:#000;color:#fff}
+.menu{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:15px;margin-top:15px}
+.card{background:#fff;padding:15px;border-radius:12px;display:flex;align-items:center;gap:10px}
+.card img{width:60px;height:60px;border-radius:50%}
+.card h4{margin:0}
+.card p{margin:4px 0;color:#666}
+.counter{margin-left:auto;display:flex;align-items:center;gap:8px}
+.counter button{width:40px;height:40px;border:none;border-radius:50%;cursor:pointer;font-size:20px}
+
+/* Order */
+.order{width:300px;background:#1b1b1b;color:#fff;padding:20px;overflow:auto}
+.order-item{display:flex;justify-content:space-between;margin:8px 0}
+.summary div{display:flex;justify-content:space-between;margin:6px 0}
+.pay button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:6px;cursor:pointer}
+
+/* Settings */
+.settings input, .settings select, .settings button, .settings textarea{margin-bottom:10px}
+.settings label{display:block;margin-top:10px}
+
+/* Toast Notification */
+#toast{position:fixed;bottom:20px;right:20px;background:#000;color:#fff;padding:12px 18px;border-radius:8px;display:none;z-index:9999;font-size:14px}
+
+/* Bill Modal */
+#bill{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);}
+#bill > div{background:#fff;width:300px;margin:50px auto;padding:15px;border-radius:10px}
+#bill h3{text-align:center}
+
+@media (max-width:768px){.container{flex-direction:column}.order{width:100%;height:40vh}}
+</style>
+</head>
+<body>
+
+<div class="container">
+<!-- Sidebar -->
+<div class="sidebar">
+<h2>FoodDish!</h2>
+<a class="active">Food & Drinks</a>
+<a>Bills</a>
+<a>Settings</a>
+</div>
+
+<!-- Main -->
+<div class="main">
+<div class="header">
+<h2>Food & Drinks</h2>
+<input class="search" placeholder="Search">
+</div>
+
+<div class="categories">
+<button class="active" onclick="filterMenu('all',this)">All</button>
+<button onclick="filterMenu('soup',this)">Soup</button>
+<button onclick="filterMenu('salad',this)">Salad</button>
+<button onclick="filterMenu('pasta',this)">Pasta</button>
+<button onclick="filterMenu('drink',this)">Drink</button>
+</div>
+
+<div class="menu">
+
+<!-- Food -->
+<div class="card soup">
+<img src="sou[.jpg">
+<div><h4>Borscht Soup</h4><p>$5</p></div>
+<div class="counter"><button onclick="qty('soup1',-1)">-</button><span id="soup1">0</span><button onclick="qty('soup1',1)">+</button></div>
+</div>
+
+<div class="card salad">
+<img src="salad.jpg">
+<div><h4>Caesar Salad</h4><p>$5</p></div>
+<div class="counter"><button onclick="qty('salad1',-1)">-</button><span id="salad1">0</span><button onclick="qty('salad1',1)">+</button></div>
+</div>
+
+<div class="card pasta">
+<img src="pasta.jpg">
+<div><h4>Spaghetti</h4><p>$6</p></div>
+<div class="counter"><button onclick="qty('pasta1',-1)">-</button><span id="pasta1">0</span><button onclick="qty('pasta1',1)">+</button></div>
+</div>
+
+<!-- Drinks -->
+<div class="card drink">
+<img src="https://i.imgur.com/9z6x7Zy.png">
+<div><h4>Coca Cola</h4><p>$2</p></div>
+<div class="counter"><button onclick="qty('drink1',-1)">-</button><span id="drink1">0</span><button onclick="qty('drink1',1)">+</button></div>
+</div>
+<div class="card drink">
+<img src="https://i.imgur.com/sv0F1cR.png">
+<div><h4>Orange Juice</h4><p>$3</p></div>
+<div class="counter"><button onclick="qty('drink2',-1)">-</button><span id="drink2">0</span><button onclick="qty('drink2',1)">+</button></div>
+</div>
+
+</div>
+
+<!-- Order -->
+<div class="order">
+<h3>Current Order</h3>
+
+<label>Customer Location</label>
+<input id="location" placeholder="Enter delivery location" style="width:100%;padding:8px;border-radius:6px;border:none;margin-bottom:10px">
+
+<label>Customer Message</label>
+<textarea id="message" placeholder="Write note..." style="width:100%;height:60px;border-radius:6px;border:none;padding:8px;margin-bottom:10px"></textarea>
+
+<div id="orderList"></div>
+
+<div class="summary">
+<div><span>Subtotal</span><span id="sub">$0</span></div>
+<div><span>Tax 10%</span><span id="tax">$0</span></div>
+<div><b>Total</b><b id="total">$0</b></div>
+</div>
+
+<div class="pay">
+<button onclick="placeOrder()">Place Order</button>
+</div>
+</div>
+</div>
+
+<!-- Bill Modal -->
+<div id="bill">
+<div>
+<h3>🧾 BILL</h3>
+<div id="billItems"></div>
+<hr>
+<div style="display:flex;justify-content:space-between"><span>Subtotal</span><span id="bSub">$0</span></div>
+<div style="display:flex;justify-content:space-between"><span>Tax</span><span id="bTax">$0</span></div>
+<div style="display:flex;justify-content:space-between;font-weight:bold"><span>Total</span><span id="bTotal">$0</span></div>
+<p id="bLocation"></p>
+<p id="bMessage"></p>
+<button onclick="printBill()" style="width:100%;margin-top:10px">Print Bill</button>
+<button onclick="closeBill()" style="width:100%;margin-top:5px">Close</button>
+</div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast"></div>
+
+<!-- Settings (Example) -->
+<div class="settings">
+<h2>⚙️ Settings</h2>
+<label>Shop Name</label>
+<input id="shopName" placeholder="My Restaurant" style="width:100%;padding:8px">
+
+<label>Currency</label>
+<select id="currency" style="width:100%;padding:8px">
+<option value="$">$ Dollar</option>
+<option value="៛">៛ Riel</option>
+</select>
+
+<label>Tax (%)</label>
+<input id="taxRate" type="number" value="10" style="width:100%;padding:8px">
+
+<label>Service Charge (%)</label>
+<input id="service" type="number" value="0" style="width:100%;padding:8px">
+
+<button onclick="saveSettings()" style="width:100%;padding:10px;margin-top:10px">Save Settings</button>
+</div>
+
+<audio id="beep"><source src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
+<script>
+let prices={soup1:5,salad1:5,pasta1:6,drink1:2,drink2:3};
+let currency="$",taxRate=0.1,serviceRate=0;
+
+function qty(id,val){
+    let el=document.getElementById(id);
+    let newQty=Math.max(0,parseInt(el.innerText)+val);
+    el.innerText=newQty;
+    updateOrder();
+    if(val>0) notify("✅ Item added");
+    if(val<0 && newQty>=0) notify("➖ Item removed");
+}
+
+function updateOrder(){
+    let sub=0,list=document.getElementById("orderList");
+    list.innerHTML="";
+    for(let id in prices){
+        let q=parseInt(document.getElementById(id).innerText);
+        if(q>0){
+            let p=q*prices[id];
+            sub+=p;
+            list.innerHTML+=`<div class="order-item"><span>${id} x${q}</span><span>${currency}${p}</span></div>`;
+        }
+    }
+    // Location & Message
+    let loc=document.getElementById("location").value;
+    let msg=document.getElementById("message").value;
+    if(loc) list.innerHTML+=`<div class="order-item"><b>📍 Location</b><span>${loc}</span></div>`;
+    if(msg) list.innerHTML+=`<div class="order-item"><b>📝 Message</b><span>${msg}</span></div>`;
+
+    let tax=sub*taxRate;
+    let total=sub+tax+sub*serviceRate;
+    document.getElementById("sub").innerText=currency+sub;
+    document.getElementById("tax").innerText=currency+tax.toFixed(2);
+    document.getElementById("total").innerText=currency+total.toFixed(2);
+}
+
+function filterMenu(type,btn){
+    document.querySelectorAll(".categories button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".card").forEach(c=>{
+        c.style.display=(type==="all"||c.classList.contains(type))?"flex":"none";
+    });
+}
+
+// Notifications
+function notify(msg){
+    document.getElementById("beep").play();
+    let toast=document.getElementById("toast");
+    toast.innerText=msg;
+    toast.style.display="block";
+    setTimeout(()=>toast.style.display="none",2000);
+}
+
+// Place order → Show bill
+function placeOrder(){
+    notify("🧾 Order placed successfully");
+    showBill();
+}
+
+// Bill
+function showBill(){
+    let billItems=document.getElementById("billItems");
+    billItems.innerHTML="";
+    let sub=0;
+    for(let id in prices){
+        let q=parseInt(document.getElementById(id).innerText);
+        if(q>0){
+            let p=q*prices[id];
+            sub+=p;
+            billItems.innerHTML+=`<div style="display:flex;justify-content:space-between"><span>${id} x${q}</span><span>${currency}${p}</span></div>`;
+        }
+    }
+    let tax=sub*taxRate;
+    let service=sub*serviceRate;
+    let total=sub+tax+service;
+    document.getElementById("bSub").innerText=currency+sub;
+    document.getElementById("bTax").innerText=currency+(tax+service).toFixed(2);
+    document.getElementById("bTotal").innerText=currency+total.toFixed(2);
+
+    document.getElementById("bLocation").innerHTML=document.getElementById("location").value ? "📍 "+document.getElementById("location").value : "";
+    document.getElementById("bMessage").innerHTML=document.getElementById("message").value ? "📝 "+document.getElementById("message").value : "";
+
+    document.getElementById("bill").style.display="block";
+}
+
+function closeBill(){document.getElementById("bill").style.display="none";}
+function printBill(){window.print();}
+
+// Settings
+function saveSettings(){
+    let settings={
+        shop:document.getElementById("shopName").value,
+        currency:document.getElementById("currency").value,
+        tax:parseFloat(document.getElementById("taxRate").value),
+        service:parseFloat(document.getElementById("service").value)
+    };
+    localStorage.setItem("posSettings",JSON.stringify(settings));
+    currency=settings.currency;
+    taxRate=settings.tax/100;
+    serviceRate=settings.service/100;
+    notify("⚙️ Settings saved");
+}
+
+// Apply saved settings
+(function(){
+    let s=JSON.parse(localStorage.getItem("posSettings"));
+    if(s){
+        document.getElementById("shopName").value=s.shop;
+        document.getElementById("currency").value=s.currency;
+        document.getElementById("taxRate").value=s.tax;
+        document.getElementById("service").value=s.service;
+        currency=s.currency; taxRate=s.tax/100; serviceRate=s.service/100;
+    }
+})();
+</script>
+</body>
+</html>
